@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="vineyard_mesh">
+    <static>true</static>
+    <link name="terrain">
+      <collision name="col">
+        <geometry>
+          <mesh>
+            <uri>model://vineyard_mesh/meshes/terrain.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name="vis">
+        <geometry>
+          <mesh>
+            <uri>model://vineyard_mesh/meshes/terrain.dae</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+
