@@ -251,7 +251,7 @@ Improved terrain-aware navigation
 GPU acceleration
 Author
 
-Alexandre [Surname]
+Alexandre Baptista
 
 MSc Thesis Project
 Autonomous Mobile Manipulation and Inspection System
@@ -259,13 +259,5 @@ Autonomous Mobile Manipulation and Inspection System
 License
 
 This project is released for academic and research purposes.
-
-You may adapt the license section depending on your preferred license:
-
-MIT
-BSD-3-Clause
-GPL
-Apache 2.0
-Citation
 
 If you use this work, please cite the associated thesis/publication.
