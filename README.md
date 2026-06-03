@@ -1,4 +1,4 @@
-Swincar-UR3 Autonomous Inspection Pipeline
+Swincar-UR3 Autonomous simulation Pipeline
 
 Autonomous mobile manipulation pipeline for target detection, navigation, beam pointing, and evaluation using a Swincar mobile robot + UR3 manipulator in ROS 2 + Gazebo Harmonic + MoveIt 2.
 
