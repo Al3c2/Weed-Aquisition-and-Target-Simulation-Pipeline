@@ -263,4 +263,4 @@ ros2 run ros_gz_bridge parameter_bridge \
 
 ## License
 
-Released for academic and research purposes. Choose a license to suit (MIT, BSD-3-Clause, GPL, Apache 2.0).
+Released for academic and research purposes, check license fiel for more info. 
