@@ -1,0 +1,74 @@
+optimized_beam_pointing:
+  ros__parameters:
+    # Beam parameters
+    beam_length: 0.65
+    ray_L_min: 0.40
+    ray_L_max: 1.00
+    ray_L_step: 0.05
+    
+    # Performance settings
+    use_cartesian_path: true
+    cartesian_step_size: 0.01
+    adaptive_velocity: true
+    min_velocity_scale: 0.6
+    max_velocity_scale: 1.0
+    
+    # Planning
+    planning_timeout: 2.0
+    num_planning_attempts: 3
+    
+    # Target queuing
+    enable_target_queue: true
+    max_queue_size: 10
+    
+    # Swincar collision
+    enable_swincar_collision: true
+    swincar_mesh_uri: "file:///home/alex/.ignition/gazebo/models/swincar/meshes/swincar_collision.dae"
+    swincar_pose_xyz: [0.0, 0.0, 0.0]
+    swincar_pose_rpy: [0.0, 0.0, 0.0]
+# ==========================================
+# QUICK TUNING GUIDE
+# ==========================================
+
+# For FASTER movement (if accuracy is less critical):
+#   min_velocity_scale: 0.6 → 0.8
+#   max_velocity_scale: 1.0 → 1.0
+#   planning_timeout: 3.0 → 2.0
+#   ik_attempts: 5 → 3
+
+# For BETTER success rate (if targets often fail):
+#   ray_L_min: 0.35 → 0.30
+#   ray_L_max: 1.20 → 1.50
+#   ik_attempts: 5 → 8
+#   orientation_flex_angle: 0.15 → 0.25
+
+# For SMOOTHER motion:
+#   use_cartesian_path: true
+#   cartesian_step_size: 0.01 → 0.005
+#   min_velocity_scale: 0.4 → 0.3
+
+# For VINEYARD rows (sequential targets):
+#   adaptive_velocity: true
+#   min_velocity_scale: 0.5
+#   max_velocity_scale: 0.9
+
+
+# ==========================================
+# EXPECTED REACHABLE WORKSPACE
+# ==========================================
+# Based on UR3 at [0, 0.2, 0.35] with 0.65m beam:
+#
+# X (lateral):      -0.25 to +0.25 m  ✓ Good coverage
+# Y (forward):      +0.40 to +1.30 m  ✓ Excellent for vineyard rows
+# Z (height):       +0.00 to +0.35 m  ✓ Good for low weeds
+#
+# Sweet spot:
+#   X: ±0.20 m
+#   Y: 0.60-1.00 m  
+#   Z: 0.10-0.25 m
+#
+# Difficult zones:
+#   - Very close (Y < 0.40): Limited reach
+#   - Very far (Y > 1.30): Beam too long
+#   - Ground level (Z < 0.05): Near collision with Swincar
+#   - High targets (Z > 0.30): Outside comfortable reach

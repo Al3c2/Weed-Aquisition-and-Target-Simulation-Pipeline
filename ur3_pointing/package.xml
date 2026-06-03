@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ur3_pointing</name>
+  <version>0.1.0</version>
+  <description>UR3 pointing servo node for ROS 2 (ament_cmake)</description>
+  <maintainer email="alex@example.com">alex</maintainer>
+  <license>BSD-3-Clause</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- ROS 2 core -->
+  <depend>rclcpp</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <!-- Messages -->
+  <depend>geometry_msgs</depend>
+  <depend>trajectory_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>moveit_msgs</depend>
+  <depend>shape_msgs</depend>
+
+  <!-- MoveIt 2 / kinematics / shapes -->
+  <depend>moveit_core</depend>
+  <depend>moveit_ros_planning</depend>
+  <depend>moveit_ros_planning_interface</depend>
+  <depend>geometric_shapes</depend>
+
+  <!-- Eigen -->
+  <depend>eigen</depend>
+  <depend>Eigen3</depend>
+
+  <!-- For launch files -->
+  <exec_depend>ros2launch</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
