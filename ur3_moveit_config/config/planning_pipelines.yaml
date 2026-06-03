@@ -1,0 +1,10 @@
+planning_pipelines:
+  pipelines: [incremental, ompl]  # keep ompl as fallback
+
+incremental:
+  planning_plugin: "my_incremental_planner/IncrementalPlanner"
+  # optional: override defaults
+  max_joint_step: 0.03
+  min_dt: 0.02
+  goal_tolerance: 0.0025
+  max_time: 2.0
