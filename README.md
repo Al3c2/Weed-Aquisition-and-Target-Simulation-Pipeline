@@ -50,6 +50,7 @@ RGB-D camera integration
 Ground-truth pose bridging
 TF synchronization
 ROS-Gazebo communication bridges
+
 2. RGB-D Ball / Target Detector
 File
 color_detector.py
@@ -72,6 +73,7 @@ Convert image coordinates → 3D camera coordinates
 Transform to robot/world frame
 Track and filter targets
 Publish target pose
+
 3. Swincar Autonomous Navigation
 File
 swincar_line_follower.py
@@ -87,6 +89,7 @@ Drive the mobile robot
 Stop when detector publishes a target
 Wait for UR3 beam completion
 Resume mission automatically
+
 4. Precise UR3 Beam Pointing
 File
 Beam_pointing_precise.cpp
@@ -104,6 +107,7 @@ Ground-truth pose integration
 Accurate moving-platform transforms
 Dynamic collision object updates
 Beam error verification
+
 5. Detection Evaluation Framework
 File
 detection_evaluator.py
@@ -122,6 +126,7 @@ Detection accuracy
 Position error
 Time-to-success
 Retry statistics
+
 6. Evaluation Plot Generator
 File
 plot_eval_results.py
