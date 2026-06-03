@@ -1,268 +1,266 @@
-Swincar-UR3 Autonomous simulation Pipeline
+# Swincar-UR3 Autonomous Inspection Pipeline
 
-Autonomous mobile manipulation pipeline for target detection, navigation, beam pointing, and evaluation using a Swincar mobile robot + UR3 manipulator in ROS 2 + Gazebo Harmonic + MoveIt 2.
+Autonomous mobile manipulation pipeline for target detection, navigation, and precise beam pointing, built on a Swincar mobile robot + UR3 manipulator in **ROS 2 Humble**, **Gazebo Harmonic**, and **MoveIt 2**.
 
-This repository contains the full software stack developed for my MSc thesis, including:
+Developed as part of an MSc thesis on autonomous robotic inspection systems. The robot drives along a track, an RGB-D camera detects blue targets, the targets are localized in the world frame, and the UR3 arm points a beam at each one with sub-centimetre precision.
 
-Mobile robot simulation
-RGB-D target detection
-Autonomous navigation / line following
-Precise beam pointing with MoveIt 2
-Ground-truth based evaluation framework
-Performance plotting and metrics generation
-System Overview
+---
 
-The pipeline integrates multiple ROS 2 nodes into a complete autonomous inspection workflow:
+## Packages
 
-Gazebo Simulation
-        ↓
-RGB-D Camera Streams
-        ↓
-Color / Ball Detector
-        ↓
-Target Localization
-        ↓
-Swincar Navigation Controller
-        ↓
-Robot Stop Confirmation
-        ↓
-UR3 Beam Pointing (MoveIt 2)
-        ↓
-Success / Failure Feedback
-        ↓
-Evaluation + Plot Generation
-Main Components
-1. Gazebo + MoveIt Launch System
+The workspace is split into two main packages:
 
-Launches:
+### `sim`
+Everything needed to run the simulation and perception/navigation stack:
+- Robot model (URDF/xacro) — the combined `swincar_ur3` nested model
+- World files, RGB-D camera, TF, and ROS ↔ Gazebo bridges
+- Launch files for the simulation and the two operating modes
+- The detector nodes (`color_detector`, `color_detector_predictive`)
+- The navigation nodes (`swincar_line_follower`, `swincar_line_follower_adaptive`, `swincar_row_driver`)
+- The evaluation nodes and ground-truth data (`gt_world.csv`)
 
-Gazebo Harmonic simulation
-Swincar + UR3 combined model
-ROS ↔ Gazebo bridges
-RGB-D camera bridges
-TF publishers
-MoveIt 2 configuration
-File
-moveit_planner_camera_moving.launch.py
-Features
-Combined nested robot model (swincar_ur3)
-RGB-D camera integration
-Ground-truth pose bridging
-TF synchronization
-ROS-Gazebo communication bridges
+### `ur3_pointing`
+The arm-side beam-pointing stack:
+- `pointing_planner` — MoveIt 2 planning node
+- `Beam_pointing_precise` — Cartesian, collision-aware precise pointing
+- `Beam_diagnostics.py` — diagnostics helper
 
-2. RGB-D Ball / Target Detector
-File
-color_detector.py
-Features
-RGB + depth fusion
-3D target localization
-Target tracking
-Re-acquisition logic
-Retry handling
-World-frame transformation using robot orientation
-Duplicate target filtering
-Publication of:
-/target_pose
-/blue_target_primary
-/all_tracked_targets
-Detection Pipeline
-Detect colored target in RGB image
-Estimate depth
-Convert image coordinates → 3D camera coordinates
-Transform to robot/world frame
-Track and filter targets
-Publish target pose
+---
 
-3. Swincar Autonomous Navigation
-File
-swincar_line_follower.py
-Features
-Ground-truth pose control
-Smooth acceleration/deceleration
-Target-triggered stopping
-Beam synchronization
-Resume after beam completion
-Goal tracking
-Responsibilities
-Drive the mobile robot
-Stop when detector publishes a target
-Wait for UR3 beam completion
-Resume mission automatically
+## Two Operating Modes
 
-4. Precise UR3 Beam Pointing
-File
-Beam_pointing_precise.cpp
-Features
-MoveIt 2 motion planning
-Cartesian beam approach
-Collision-aware planning
-Ground-truth collision tracking
-Full quaternion-based coordinate transforms
-Adaptive planning parameters
-Retry logic
-Precision verification
-Important Improvements
-Ground-truth pose integration
-Accurate moving-platform transforms
-Dynamic collision object updates
-Beam error verification
+The pipeline runs in one of two modes:
 
-5. Detection Evaluation Framework
-File
-detection_evaluator.py
-Features
-Ground-truth comparison
-Position error analysis
-Success/failure tracking
-Timing metrics
-CSV export
-Full orientation-aware transformations
-Metrics
-True positives
-False positives
-False negatives
-Detection accuracy
-Position error
-Time-to-success
-Retry statistics
+**1. Start-stop mode** — the robot drives, stops at each detected target, points, then resumes. Simpler and more precise per target.
 
-6. Evaluation Plot Generator
-File
-plot_eval_results.py
-Generates
-Detection accuracy histograms
-Cumulative detection curves
-Success/failure summaries
-Timing statistics
-Retry statistics
-Output Formats
-PNG
-PDF
-Technologies Used
-Robotics
-ROS 2 Humble
-Gazebo Harmonic / Ignition Gazebo
-MoveIt 2
-TF2
-Programming
-Python
-C++
-Libraries
-OpenCV
-NumPy
-SciPy
-Matplotlib
-Repository Structure
-.
-├── launch/
-│   └── moveit_planner_camera_moving.launch.py
-│
-├── src/
-│   ├── color_detector.py
-│   ├── swincar_line_follower.py
-│   ├── detection_evaluator.py
-│   ├── plot_eval_results.py
-│   └── Beam_pointing_precise.cpp
-│
-├── models/
-│   └── swincar_ur3/
-│
-├── worlds/
-│   └── sensors.world.sdf
-│
-├── data/
-│   └── gt_world.csv
-│
-└── plots/
-Running the System
-1. Launch Simulation
-ros2 launch <your_package> moveit_planner_camera_moving.launch.py
-2. Run Detector
-ros2 run <your_package> color_detector.py
-3. Run Navigation Controller
-ros2 run <your_package> swincar_line_follower.py
-4. Run Beam Pointing Node
-ros2 run <your_package> Beam_pointing_precise
-5. Run Evaluation
-ros2 run <your_package> detection_evaluator.py
-6. Generate Plots
+**2. Continuous / predictive mode** — the robot keeps moving while the arm predicts and sweeps to hit targets on the fly. Higher throughput, uses the `*_predictive` and `*_adaptive` nodes.
+
+---
+
+## Setup
+
+Source ROS 2 and the workspace in every terminal:
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/tese_ws/install/setup.bash
+```
+
+---
+
+## Running — Start-Stop Mode
+
+**Launch the simulation:**
+```bash
+ros2 launch sim moveit_planner_camera_moving.launch.py
+```
+
+**Run the detector:**
+```bash
+ros2 run sim color_detector.py --ros-args \
+  -p rgb_topic:=/world/empty/model/swincar_ur3/model/ur3/link/base_link/sensor/rgbd_camera/image \
+  -p depth_topic:=/world/empty/model/swincar_ur3/model/ur3/link/base_link/sensor/rgbd_camera/depth_image \
+  -p camera_info_topic:=/world/empty/model/swincar_ur3/model/ur3/link/base_link/sensor/rgbd_camera/camera_info \
+  -p camera_frame:=camera_optical_link \
+  -p robot_frame:=base_link \
+  -p world_frame:=world \
+  -p use_ground_truth:=true \
+  -p ground_truth_topic:=/model/swincar_ur3/pose \
+  -p ground_truth_frame_id:=empty
+```
+
+**Run the navigation controller:**
+```bash
+ros2 run sim swincar_line_follower.py --ros-args \
+  -p pose_topic:=/model/swincar_ur3/pose \
+  -p target_topic:=/blue_target_primary \
+  -p beam_done_topic:=/beam_task_done \
+  -p x_goal:=-54.0 \
+  -p base_speed:=0.1 \
+  -p min_drive_before_stop:=0.0 \
+  -p accel_rate:=0.01
+```
+
+**Run the beam-pointing node:**
+```bash
+ros2 run ur3_pointing pointing_planner
+ros2 run ur3_pointing Beam_pointing_precise
+```
+
+---
+
+## Running — Continuous / Predictive Mode
+
+**Launch the predictive pipeline:**
+```bash
+ros2 launch sim predictive_pointing_launch.py
+```
+
+**Run the predictive detector:**
+```bash
+ros2 run sim color_detector_predictive.py --ros-args \
+  -p rgb_topic:=/world/empty/model/swincar_ur3/model/ur3/link/base_link/sensor/rgbd_camera/image \
+  -p depth_topic:=/world/empty/model/swincar_ur3/model/ur3/link/base_link/sensor/rgbd_camera/depth_image \
+  -p camera_info_topic:=/world/empty/model/swincar_ur3/model/ur3/link/base_link/sensor/rgbd_camera/camera_info \
+  -p camera_frame:=camera_optical_link \
+  -p robot_frame:=base_link \
+  -p world_frame:=world \
+  -p use_ground_truth:=true \
+  -p ground_truth_topic:=/model/swincar_ur3/pose \
+  -p ground_truth_frame_id:=empty
+```
+
+**Run the adaptive line follower:**
+```bash
+ros2 run sim swincar_line_follower_adaptive.py --ros-args \
+  -p pose_topic:=/model/swincar_ur3/pose \
+  -p target_topic:=/blue_target_primary \
+  -p beam_done_topic:=/beam_task_done \
+  -p x_goal:=-54.0
+```
+
+---
+
+## System Flow
+
+```
+Detector publishes target
+       ↓
+UR3 attempts to point
+       ↓
+    ┌──┴──┐
+    ↓     ↓
+SUCCESS  FAILED
+(< 10mm) (≥ 10mm or exec fail)
+    ↓     ↓
+ beam_done  beam_failed
+    ↓     ↓
+    └──┬──┘
+       ↓
+Detector unlocks → Line follower resumes → Next target
+```
+
+---
+
+## Evaluation
+
+Ground-truth target positions live in `gt_world.csv`. Each published target is matched against the ground truth within a configurable threshold, producing position-error, success/failure, timing, and retry statistics.
+
+**Start-stop evaluator:**
+```bash
+ros2 run sim detection_evaluator.py --ros-args \
+  -p gt_world_csv:=/home/alex/tese_ws/src/sim/color_detector/gt_world.csv \
+  -p target_pose_topic:=/target_pose \
+  -p use_ground_truth_pose:=true \
+  -p ground_truth_topic:=/model/swincar_ur3/pose \
+  -p ground_truth_frame_id:=empty \
+  -p summary_csv:=/home/alex/tese_ws/src/sim/color_detector/eval_summary.csv \
+  -p detailed_csv:=/home/alex/tese_ws/src/sim/color_detector/eval_detailed.csv
+```
+
+**Predictive evaluator:**
+```bash
+ros2 run sim detection_evaluator_predictive.py --ros-args \
+  -p gt_world_csv:=/home/alex/tese_ws/src/sim/color_detector/gt_world.csv \
+  -p target_pose_topic:=/target_pose \
+  -p use_ground_truth_pose:=true \
+  -p ground_truth_topic:=/model/swincar_ur3/pose \
+  -p ground_truth_frame_id:=empty \
+  -p summary_csv:=/home/alex/tese_ws/src/sim/color_detector/eval_summary.csv \
+  -p detailed_csv:=/home/alex/tese_ws/src/sim/color_detector/eval_detailed.csv
+```
+
+**Generate plots:**
+```bash
 python3 plot_eval_results.py eval_detailed.csv -o plots/
-Coordinate Frames
+```
 
-Main frames used:
+---
 
+## Coordinate Frames
+
+```
 world
- └── swincar_base
-      └── base_link
-           └── camera_optical_link
+└── swincar_base
+    └── base_link
+        └── camera_optical_link
+```
 
-The system performs full quaternion-based transformations between:
+Full quaternion-based transformations are performed between the camera, robot, and world frames so target localization stays accurate on uneven terrain.
 
-Camera frame
-Robot frame
-World frame
+### Ball-Center Localization
 
-to ensure accurate target localization on uneven terrain.
+The detector estimates the **center** of a ball from the depth reading of its **surface**. The correct method extends along the camera ray by one ball radius, rather than adding the radius to the Z component:
 
-Evaluation Methodology
+```python
+def surface_to_center_correct(u, v, depth):
+    # 1. Unit ray through the pixel
+    ray = pixel_to_ray(u, v)            # normalized direction
 
-Ground-truth target locations are stored in:
+    # 2. Surface point (depth gives the Z component)
+    t_surface = depth / ray[2]
+    surface_point = ray * t_surface
 
-gt_world.csv
+    # 3. Extend ALONG THE RAY by ball_radius to reach the center
+    center_point = surface_point + ray * ball_radius
+    return center_point
+```
 
-Each published target is matched against GT targets using a configurable threshold.
+```
+         Camera
+            \
+             \  ray direction
+              \
+               * Surface (depth sensor reading)
+                \
+                 * Ball center (surface + radius ALONG RAY)
 
-Evaluation includes:
+WRONG:   add radius to Z, recompute X,Y  → center shifts sideways
+CORRECT: extend along the ray            → center stays on the line of sight
+```
 
-Final success per GT target
-Retry-aware statistics
-Position error computation
-Timing analysis
-Detection coverage
-Key Contributions
+---
 
-This work focuses on:
+## Useful Commands
 
-Autonomous mobile manipulation
-RGB-D target localization
-Dynamic transform handling on moving platforms
-Precision beam pointing
-Robust retry and re-acquisition logic
-Evaluation of perception-to-action pipelines
-Thesis Context
+**Manual drive (Twist command):**
+```bash
+ros2 topic pub /swincar/cmd_vel geometry_msgs/msg/Twist \
+  "{ linear: {x: 0.25, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0} }"
+```
 
-This repository was developed as part of my MSc thesis on autonomous robotic inspection systems using a mobile manipulator platform.
+**View the camera feed:**
+```bash
+ros2 run rqt_image_view rqt_image_view
+```
 
-The project combines:
+**Manual pose bridge (if not started by a launch file):**
+```bash
+ros2 run ros_gz_bridge parameter_bridge \
+  '/world/empty/dynamic_pose/info@ros_gz_interfaces/msg/Pose_V@ignition.msgs.Pose_V'
+```
 
-perception,
-navigation,
-manipulation,
-motion planning,
-and evaluation
+---
 
-into a fully integrated ROS 2 pipeline.
+## Technologies
 
-Future Improvements
+- **Robotics:** ROS 2 Humble, Gazebo Harmonic / Ignition, MoveIt 2, TF2
+- **Languages:** Python, C++
+- **Libraries:** OpenCV, NumPy, SciPy, Matplotlib
 
-Potential future work includes:
+---
 
-Real robot deployment
-SLAM integration
-Multi-target prioritization
-Deep-learning based detection
-Improved terrain-aware navigation
-GPU acceleration
-Author
+## Future Work
 
-Alexandre Baptista
+- Real-robot deployment
+- SLAM integration
+- Multi-target prioritization
+- Deep-learning-based detection
+- Improved terrain-aware navigation
+- GPU acceleration
 
-MSc Thesis Project
-Autonomous Mobile Manipulation and Inspection System
+---
 
-License
+## License
 
-This project is released for academic and research purposes.
-
-If you use this work, please cite the associated thesis/publication.
+Released for academic and research purposes. Choose a license to suit (MIT, BSD-3-Clause, GPL, Apache 2.0).
