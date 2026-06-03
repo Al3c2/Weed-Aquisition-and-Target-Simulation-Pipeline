@@ -1,0 +1,493 @@
+<sdf version='1.9'>
+  <world name='empty'>
+    <physics name='1ms' type='ignored'>
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <plugin name='gz::sim::systems::Physics' filename='ignition-gazebo-physics-system'/>
+    <plugin name='gz::sim::systems::UserCommands' filename='ignition-gazebo-user-commands-system'/>
+    <plugin name='gz::sim::systems::SceneBroadcaster' filename='ignition-gazebo-scene-broadcaster-system'/>
+    <plugin name='gz::sim::systems::Contact' filename='ignition-gazebo-contact-system'/>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic'/>
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+      <shadows>true</shadows>
+    </scene>
+    <model name='ground_plane'>
+      <static>true</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+        <pose>0 0 0 0 -0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>1</mass>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+        </inertial>
+        <enable_wind>false</enable_wind>
+      </link>
+      <pose>0 0 0 0 -0 0</pose>
+      <self_collide>false</self_collide>
+    </model>
+    <model name='ur'>
+      <joint name='base_joint' type='fixed'>
+        <pose>0 0 0 0 -0 0</pose>
+        <parent>world</parent>
+        <child>base_link</child>
+      </joint>
+      <link name='base_link'>
+        <pose>0 0 0.5 0 -0 0</pose>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <mass>2</mass>
+          <inertia>
+            <ixx>0.00305317</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00305317</iyy>
+            <iyz>0</iyz>
+            <izz>0.0056249999999999998</izz>
+          </inertia>
+        </inertial>
+        <collision name='base_link_inertia_collision'>
+          <pose>0 0 0 0 0 -2.449293598294706e-16</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/base.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='base_link_inertia_visual'>
+          <pose>0 0 0 0 0 -2.449293598294706e-16</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/base.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <joint name='shoulder_pan_joint' type='revolute'>
+        <pose>0 0 0 0 -0 0</pose>
+        <parent>base_link</parent>
+        <child>shoulder_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-6.2831900000000003</lower>
+            <upper>6.2831900000000003</upper>
+            <effort>56</effort>
+            <velocity>3.1415899999999999</velocity>
+            <stiffness>100000000</stiffness>
+            <dissipation>1</dissipation>
+          </limit>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+            <damping>0</damping>
+            <friction>0</friction>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name='shoulder_link'>
+        <pose>0 0 0.6519 0 -0 -3.14159</pose>
+        <inertial>
+          <pose>0 0 -0.02 0 -0 0</pose>
+          <mass>2</mass>
+          <inertia>
+            <ixx>0.0080931700000000002</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.0080931700000000002</iyy>
+            <iyz>0</iyz>
+            <izz>0.0056249999999999998</izz>
+          </inertia>
+        </inertial>
+        <collision name='shoulder_link_collision'>
+          <pose>0 0 0 0 0 3.141592653589793</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/shoulder.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='shoulder_link_visual'>
+          <pose>0 0 0 0 0 3.141592653589793</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/shoulder.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <joint name='shoulder_lift_joint' type='revolute'>
+        <pose>-0 0 -0 0 -0 0</pose>
+        <parent>shoulder_link</parent>
+        <child>upper_arm_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-6.2831900000000003</lower>
+            <upper>6.2831900000000003</upper>
+            <effort>56</effort>
+            <velocity>3.1415899999999999</velocity>
+            <stiffness>100000000</stiffness>
+            <dissipation>1</dissipation>
+          </limit>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+            <damping>0</damping>
+            <friction>0</friction>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name='upper_arm_link'>
+        <pose>0 -0 0.6519 1.5708 1.57 -3.14159</pose>
+        <inertial>
+          <pose>-0.11365 0 0.1157 0 1.5708 0</pose>
+          <mass>3.4199999999999999</mass>
+          <inertia>
+            <ixx>0.021728500000000001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.021728500000000001</iyy>
+            <iyz>0</iyz>
+            <izz>0.0096187500000000006</izz>
+          </inertia>
+        </inertial>
+        <collision name='upper_arm_link_collision'>
+          <pose>0 0 0.1198 1.570796326794896 0 -1.570796326794896</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/upperarm.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='upper_arm_link_visual'>
+          <pose>0 0 0.1198 1.570796326794896 0 -1.570796326794896</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/upperarm.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <joint name='elbow_joint' type='revolute'>
+        <pose>-0 0 -0 0 -0 0</pose>
+        <parent>upper_arm_link</parent>
+        <child>forearm_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-3.1415899999999999</lower>
+            <upper>3.1415899999999999</upper>
+            <effort>28</effort>
+            <velocity>3.1415899999999999</velocity>
+            <stiffness>100000000</stiffness>
+            <dissipation>1</dissipation>
+          </limit>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+            <damping>0</damping>
+            <friction>0</friction>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name='forearm_link'>
+        <pose>0.000194 0 0.89555 1.5708 1.57 -3.14159</pose>
+        <inertial>
+          <pose>-0.16325 0 0.0238 0 1.5708 0</pose>
+          <mass>1.26</mass>
+          <inertia>
+            <ixx>0.0065468100000000001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.0065468100000000001</iyy>
+            <iyz>0</iyz>
+            <izz>0.00354375</izz>
+          </inertia>
+        </inertial>
+        <collision name='forearm_link_collision'>
+          <pose>0 0 0.0275 1.570796326794896 0 -1.570796326794896</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/forearm.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='forearm_link_visual'>
+          <pose>0 0 0.0275 1.570796326794896 0 -1.570796326794896</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/forearm.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <joint name='wrist_1_joint' type='revolute'>
+        <pose>-0 0 0 0 -0 0</pose>
+        <parent>forearm_link</parent>
+        <child>wrist_1_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-6.2831900000000003</lower>
+            <upper>6.2831900000000003</upper>
+            <effort>12</effort>
+            <velocity>6.2831900000000003</velocity>
+            <stiffness>100000000</stiffness>
+            <dissipation>1</dissipation>
+          </limit>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+            <damping>0</damping>
+            <friction>0</friction>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name='wrist_1_link'>
+        <pose>0.000364 0.11235 1.1088 -1.5708 0.001593 0</pose>
+        <inertial>
+          <pose>0 -0.01 0 0 -0 0</pose>
+          <mass>0.80000000000000004</mass>
+          <inertia>
+            <ixx>0.00161064</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00161064</iyy>
+            <iyz>0</iyz>
+            <izz>0.0022499999999999998</izz>
+          </inertia>
+        </inertial>
+        <collision name='wrist_1_link_collision'>
+          <pose>0 0 -0.08500000000000001 1.570796326794896 0 0</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/wrist1.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='wrist_1_link_visual'>
+          <pose>0 0 -0.08500000000000001 1.570796326794896 0 0</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/wrist1.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <joint name='wrist_2_joint' type='revolute'>
+        <pose>0 0 0 0 0 -0</pose>
+        <parent>wrist_1_link</parent>
+        <child>wrist_2_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-6.2831900000000003</lower>
+            <upper>6.2831900000000003</upper>
+            <effort>12</effort>
+            <velocity>6.2831900000000003</velocity>
+            <stiffness>100000000</stiffness>
+            <dissipation>1</dissipation>
+          </limit>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+            <damping>0</damping>
+            <friction>0</friction>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name='wrist_2_link'>
+        <pose>0.0005 0.11235 1.19415 -0 0.001593 -0</pose>
+        <inertial>
+          <pose>0 0.01 0 0 -0 0</pose>
+          <mass>0.80000000000000004</mass>
+          <inertia>
+            <ixx>0.0015721699999999999</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.0015721699999999999</iyy>
+            <iyz>0</iyz>
+            <izz>0.0022499999999999998</izz>
+          </inertia>
+        </inertial>
+        <collision name='wrist_2_link_collision'>
+          <pose>0 0 -0.083 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/wrist2.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='wrist_2_link_visual'>
+          <pose>0 0 -0.083 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/wrist2.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <joint name='wrist_3_joint' type='revolute'>
+        <pose>0 0 -0 0 -0 0</pose>
+        <parent>wrist_2_link</parent>
+        <child>wrist_3_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-10000000000000000</lower>
+            <upper>10000000000000000</upper>
+            <effort>12</effort>
+            <velocity>6.2831900000000003</velocity>
+            <stiffness>100000000</stiffness>
+            <dissipation>1</dissipation>
+          </limit>
+          <dynamics>
+            <spring_reference>0</spring_reference>
+            <spring_stiffness>0</spring_stiffness>
+            <damping>0</damping>
+            <friction>0</friction>
+          </dynamics>
+        </axis>
+      </joint>
+      <link name='wrist_3_link'>
+        <pose>0.0005 0.19425 1.19415 -1.5708 0.001593 -0</pose>
+        <inertial>
+          <pose>0 0 -0.02 0 -0 0</pose>
+          <mass>0.34999999999999998</mass>
+          <inertia>
+            <ixx>0.000136267</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.000136267</iyy>
+            <iyz>0</iyz>
+            <izz>0.00017919999999999999</izz>
+          </inertia>
+        </inertial>
+        <collision name='wrist_3_link_collision'>
+          <pose>0 -0.00255 -0.082 1.570796326794896 0 0</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/collision/wrist3.stl</uri>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name='wrist_3_link_visual'>
+          <pose>0 -0.00255 -0.082 1.570796326794896 0 0</pose>
+          <geometry>
+            <mesh>
+              <scale>1 1 1</scale>
+              <uri>file:///home/alex/tese_ws/install/ur_description/share/ur_description/meshes/ur3/visual/wrist3.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <enable_wind>false</enable_wind>
+      </link>
+      <plugin name='ign_ros2_control::IgnitionROS2ControlPlugin' filename='libign_ros2_control-system.so'>
+        <parameters>/home/alex/tese_ws/install/sim/share/sim/config/ur3_controllers.yaml</parameters>
+        <controller_manager_node_name>controller_manager</controller_manager_node_name>
+      </plugin>
+      <frame name='base_link-base_fixed_joint' attached_to='base_link'>
+        <pose>0 0 0 0 -0 3.14159</pose>
+      </frame>
+      <frame name='base' attached_to='base_link-base_fixed_joint'/>
+      <frame name='base_link-base_link_inertia' attached_to='base_link'>
+        <pose>0 0 0 0 -0 3.14159</pose>
+      </frame>
+      <frame name='base_link_inertia' attached_to='base_link-base_link_inertia'/>
+      <frame name='flange-tool0' attached_to='flange'>
+        <pose>0 0 0 1.5708 -0 1.5708</pose>
+      </frame>
+      <frame name='tool0' attached_to='flange-tool0'/>
+      <frame name='wrist_3-flange' attached_to='wrist_3_link'>
+        <pose>0 0 0 -1.5708 -1.5708 0</pose>
+      </frame>
+      <frame name='flange' attached_to='wrist_3-flange'/>
+      <frame name='wrist_3_link-ft_frame' attached_to='wrist_3_link'>
+        <pose>0 0 0 3.14159 -0 0</pose>
+      </frame>
+      <frame name='ft_frame' attached_to='wrist_3_link-ft_frame'/>
+      <pose>0 0 0 0 -0 0</pose>
+      <static>false</static>
+      <self_collide>false</self_collide>
+    </model>
+    <light name='sun' type='directional'>
+      <pose>0 0 10 0 -0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1</intensity>
+      <direction>-0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <linear>0.01</linear>
+        <constant>0.90000000000000002</constant>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
+  </world>
+</sdf>

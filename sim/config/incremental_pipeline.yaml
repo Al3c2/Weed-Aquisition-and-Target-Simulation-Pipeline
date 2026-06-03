@@ -1,0 +1,14 @@
+move_group:
+  ros__parameters:
+    planning_pipelines: ["incremental", "ompl"]
+    default_planning_pipeline: "ompl"   # switch to "incremental" after it loads cleanly
+
+    # Params for the incremental pipeline
+    incremental:
+      planning_plugin: "my_incremental_planner/IncrementalPlannerManager"
+      request_adapters: ""         # empty string is OK
+      start_state_max_bounds_error: 0.1
+      max_joint_step: 0.08
+      min_dt: 0.05
+      goal_tolerance: 0.002
+      max_time: 1.0

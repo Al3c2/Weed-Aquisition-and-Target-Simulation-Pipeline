@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""
+Swincar Line Follower - ADAPTIVE SPEED (Correct Version)
+
+YOUR SPECS:
+- Base speed: 0.1 m/s (max swincar can handle)
+- Slowdown range: 0.01-0.03 m/s (much slower for arm targeting)
+- Speed commanded by detector based on distance + arm time
+"""
+import math
+import rclpy
+from rclpy.node import Node
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist, PointStamped
+from std_msgs.msg import Bool, Float32
+
+
+def yaw_from_quat(q):
+    siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+    cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+    return math.atan2(siny_cosp, cosy_cosp)
+
+
+def wrap_pi(angle):
+    while angle > math.pi:
+        angle -= 2.0 * math.pi
+    while angle < -math.pi:
+        angle += 2.0 * math.pi
+    return angle
+
+
+def clamp(value, min_val, max_val):
+    return max(min_val, min(max_val, value))
+
+
+class SwincarLineFollowerAdaptive(Node):
+    def __init__(self):
+        super().__init__("swincar_line_follower_adaptive")
+
+        # Parameters
+        self.declare_parameter("cmd_vel_topic", "/swincar/cmd_vel")
+        self.declare_parameter("odom_topic", "/swincar/odom")
+        
+        self.declare_parameter("x_start", -1.0)
+        self.declare_parameter("x_goal", -54.0)
+        self.declare_parameter("y_target", 0.0)
+        self.declare_parameter("goal_tolerance", 0.5)
+        
+        # Speed parameters - YOUR SPECS
+        self.declare_parameter("control_rate", 20.0)
+        self.declare_parameter("normal_speed", 0.35)      # Max speed robot can handle
+        self.declare_parameter("min_speed", 0.01)        # Slowest (for close targets)
+        self.declare_parameter("max_angular_speed", 1.5)
+        
+        # Pure pursuit
+        self.declare_parameter("lookahead_distance", 3.0)
+        self.declare_parameter("lateral_gain", 2.0)
+        self.declare_parameter("heading_gain", 1.5)
+        
+        # Startup
+        self.declare_parameter("startup_speed_factor", 0.4)
+        self.declare_parameter("startup_threshold", 0.8)
+        self.declare_parameter("direction_sign", -1.0)
+        
+        # Adaptive speed
+        self.declare_parameter("slowdown_timeout", 10.0)
+        self.declare_parameter("speed_change_rate", 0.5)  # Fast decel to catch targets
+
+        # Get parameters
+        cmd_vel_topic = self.get_parameter("cmd_vel_topic").value
+        odom_topic = self.get_parameter("odom_topic").value
+        
+        self.x_start = float(self.get_parameter("x_start").value)
+        self.x_goal = float(self.get_parameter("x_goal").value)
+        self.y_target = float(self.get_parameter("y_target").value)
+        self.goal_tolerance = float(self.get_parameter("goal_tolerance").value)
+        
+        rate_hz = float(self.get_parameter("control_rate").value)
+        self.normal_speed = abs(float(self.get_parameter("normal_speed").value))
+        self.min_speed = abs(float(self.get_parameter("min_speed").value))
+        self.max_angular_speed = abs(float(self.get_parameter("max_angular_speed").value))
+        
+        self.lookahead = float(self.get_parameter("lookahead_distance").value)
+        self.k_lateral = float(self.get_parameter("lateral_gain").value)
+        self.k_heading = float(self.get_parameter("heading_gain").value)
+        
+        self.startup_factor = float(self.get_parameter("startup_speed_factor").value)
+        self.startup_threshold = float(self.get_parameter("startup_threshold").value)
+        self.dir_sign = float(self.get_parameter("direction_sign").value)
+        
+        self.slowdown_timeout = float(self.get_parameter("slowdown_timeout").value)
+        self.speed_change_rate = abs(float(self.get_parameter("speed_change_rate").value))
+
+        # State
+        self.odom_received = False
+        self.x = 0.0
+        self.y = 0.0
+        self.yaw = 0.0
+        self.goal_reached = False
+        
+        # Adaptive speed state
+        self.target_detected = False
+        self.target_detect_time = None
+        self.target_speed = self.normal_speed
+        # Start from zero — ramp up smoothly. Avoids the launch spike where
+        # the robot springs forward at normal_speed before the detector or
+        # line-follower heading controller have stabilised.
+        self.current_speed = 0.0
+        self.last_control_time = None
+        
+        # Logging state - only log when values change
+        self.last_logged_speed = self.current_speed
+        self.last_logged_status = None
+
+        # Publishers/Subscribers
+        self.cmd_pub = self.create_publisher(Twist, cmd_vel_topic, 10)
+        self.odom_sub = self.create_subscription(Odometry, odom_topic, self.odom_callback, 10)
+        
+        self.target_point_sub = self.create_subscription(
+            PointStamped, '/blue_target_primary', self.target_point_callback, 10)
+        
+        self.target_speed_sub = self.create_subscription(
+            Float32, '/target_slowdown_speed', self.target_speed_callback, 10)
+        
+        self.beam_done_sub = self.create_subscription(
+            Bool, '/beam_task_done', self.beam_done_callback, 10)
+        
+        self.beam_failed_sub = self.create_subscription(
+            Bool, '/beam_task_failed', self.beam_failed_callback, 10)
+        
+        # Timers
+        self.timer = self.create_timer(1.0 / rate_hz, self.control_loop)
+        self.log_timer = self.create_timer(1.0, self.log_status)
+
+        self.get_logger().info("=" * 60)
+        self.get_logger().info("Swincar Adaptive Speed Line Follower")
+        self.get_logger().info("=" * 60)
+        self.get_logger().info(f"Normal speed: {self.normal_speed:.2f} m/s (max for robot)")
+        self.get_logger().info(f"Slowdown range: {self.min_speed:.2f} m/s (detector calculates)")
+        self.get_logger().info(f"Route: x={self.x_start:.1f} -> x={self.x_goal:.1f}")
+        self.get_logger().info("=" * 60)
+
+    def target_point_callback(self, msg: PointStamped):
+        if not self.target_detected:
+            self.get_logger().info(
+                f"[TARGET] Target at [{msg.point.x:.2f}, {msg.point.y:.2f}, {msg.point.z:.2f}]"
+            )
+    
+    def target_speed_callback(self, msg: Float32):
+        """Detector tells us exact speed to use"""
+        commanded_speed = max(self.min_speed, min(msg.data, self.normal_speed))
+        
+        self.target_detected = True
+        self.target_detect_time = self.get_clock().now()
+        self.target_speed = commanded_speed
+        
+        # Only log if speed actually changed
+        if abs(commanded_speed - self.last_logged_speed) > 0.001:
+            self.get_logger().info(
+                f"[SLOW] SLOW to {commanded_speed:.3f} m/s (was {self.current_speed:.3f})"
+            )
+            self.last_logged_speed = commanded_speed
+    
+    def beam_done_callback(self, msg: Bool):
+        if msg.data and self.target_detected:
+            self.target_detected = False
+            # Do NOT resume speed - detector controls speed via /target_slowdown_speed
+            self.get_logger().info(f"beam done - speed held")
+    
+    def beam_failed_callback(self, msg: Bool):
+        if msg.data and self.target_detected:
+            self.target_detected = False
+            # Do NOT resume speed - detector controls recovery timing
+            self.get_logger().info(f"beam failed - speed held")
+
+    def odom_callback(self, msg: Odometry):
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+        self.yaw = yaw_from_quat(msg.pose.pose.orientation)
+        
+        if not self.odom_received:
+            self.odom_received = True
+            self.get_logger().info(f"Odometry: x={self.x:.2f}, y={self.y:.2f}")
+
+    def control_loop(self):
+        if not self.odom_received:
+            return
+        
+        current_time = self.get_clock().now()
+        
+        if self.last_control_time is None:
+            self.last_control_time = current_time
+            return
+        
+        dt = (current_time - self.last_control_time).nanoseconds * 1e-9
+        self.last_control_time = current_time
+
+        # Goal check
+        distance_to_goal = abs(self.x - self.x_goal)
+        
+        if distance_to_goal < self.goal_tolerance:
+            if not self.goal_reached:
+                self.get_logger().info(f"[GOAL] GOAL! Final x={self.x:.2f}, y={self.y:.2f}")
+                self.goal_reached = True
+            self.publish_cmd_vel(0.0, 0.0)
+            return
+        
+        # Timeout check
+        if self.target_detected:
+            elapsed = (current_time - self.target_detect_time).nanoseconds * 1e-9
+            if elapsed > self.slowdown_timeout:
+                self.get_logger().warn(f"[TIMEOUT] Timeout - resume normal")
+                self.target_detected = False
+                self.target_speed = self.normal_speed
+        
+        # Smooth speed transition — only ramp up once heading is aligned.
+        # In the bumpy world the robot spawns slightly off-axis; commanding
+        # normal_speed before yaw is settled causes a physical jolt that
+        # misplaces the first camera detections.
+        direction = 1.0 if self.x_goal > self.x else -1.0
+        lookahead_x = self.x + direction * self.lookahead
+        lookahead_y = self.y_target
+        dx = lookahead_x - self.x
+        dy = lookahead_y - self.y
+        desired_yaw = math.atan2(dy, dx)
+        heading_error = wrap_pi(desired_yaw - self.yaw)
+        lateral_error = self.y - self.y_target
+
+        # Only allow speed ramp when heading is close to desired direction.
+        # This prevents the forward lurch before the robot is pointing correctly.
+        heading_ok = abs(heading_error) < math.radians(15) and abs(lateral_error) < 0.3
+        effective_target = self.target_speed if heading_ok else 0.0
+
+        if abs(self.current_speed - effective_target) > 0.001:
+            max_change = self.speed_change_rate * dt
+            speed_diff = effective_target - self.current_speed
+            if abs(speed_diff) < max_change:
+                self.current_speed = effective_target
+            else:
+                self.current_speed += math.copysign(max_change, speed_diff)
+        
+        angular_velocity = (
+            self.k_heading * heading_error - 
+            self.k_lateral * lateral_error
+        )
+        angular_velocity = clamp(angular_velocity, -self.max_angular_speed, self.max_angular_speed)
+
+        # Speed factor for alignment
+        speed_factor = 1.0
+        if abs(lateral_error) > self.startup_threshold or abs(heading_error) > math.radians(45):
+            speed_factor = self.startup_factor
+
+        linear_velocity = self.dir_sign * self.current_speed * speed_factor
+        self.publish_cmd_vel(linear_velocity, angular_velocity)
+
+    def publish_cmd_vel(self, linear: float, angular: float):
+        cmd = Twist()
+        cmd.linear.x = linear
+        cmd.angular.z = angular
+        self.cmd_pub.publish(cmd)
+
+    def log_status(self):
+        if not self.odom_received or self.goal_reached:
+            return
+
+        distance_to_goal = abs(self.x - self.x_goal)
+        lateral_error = self.y - self.y_target
+        
+        status = "[SLOW]" if self.target_detected else "[MOVE]"
+        
+        # Only log if speed changed or status changed
+        speed_changed = abs(self.current_speed - self.last_logged_speed) > 0.001
+        status_changed = status != self.last_logged_status
+        
+        if speed_changed or status_changed:
+            self.get_logger().info(
+                f"{status} {self.current_speed:.3f}m/s | "
+                f"x={self.x:6.2f} y={self.y:+.3f} | "
+                f"goal={distance_to_goal:.1f}m"
+            )
+            self.last_logged_speed = self.current_speed
+            self.last_logged_status = status
+
+    def destroy_node(self):
+        self.publish_cmd_vel(0.0, 0.0)
+        super().destroy_node()
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = SwincarLineFollowerAdaptive()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

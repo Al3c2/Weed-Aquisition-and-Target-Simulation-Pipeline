@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<robot name="camera" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:property name="URYT" value="$(env URYT)"/>
+
+  <material name="red">
+    <color rgba="1 0 0 1"/>
+  </material>
+
+  <!-- Physical camera body -->
+  <link name="camera_link">
+    <inertial>
+      <origin xyz="-0.00936 -0.00003 -0.00273" rpy="0 0 0"/>
+      <mass value="0.2197"/>
+      <inertia ixx="0.00000429247" ixy="0.0" ixz="0.00000002565"
+               iyy="0.00000008027" iyz="0.0"
+               izz="0.00000427339"/>
+    </inertial>
+
+    <visual>
+      <geometry>
+        <mesh filename="file://$(find sim)/meshes/kinetic.stl" />
+      </geometry>
+      <material name="red"/>
+    </visual>
+
+    <collision>
+      <geometry>
+        <mesh filename="file://$(find sim)/meshes/kinetic.dae" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Mount camera_link on UR3 base_link -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+
+    <!-- Camera position wrt base_link (TUNE AS NEEDED) -->
+    <!-- Example: x=-0.1, y=0.2, z=0.3 in base_link frame -->
+
+    <!-- origin xyz="-0.1 0.1 -0.05" rpy="0 0.2 1.5708" camera normal pa sim parada/-->
+    <!--<origin xyz="-0.1 0.4 -0.05" rpy="0 0 2.7"/>
+    pose visual moving <pose>-0.97 -0.04 0.15 0 -0 2.4</pose>-->
+    <origin xyz="-0.97 0.0 -0.05" rpy="0 0 2.2"/>
+  </joint>
+
+  <!-- Optical frame (standard ROS camera frame) -->
+  <link name="camera_optical_link"/>
+
+  <!-- Transform from camera_link to camera_optical_link:
+       - x right
+       - y down
+       - z forward
+       This is the standard rpy for ROS optical frames. -->
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_link"/>
+    <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708" />
+  </joint>
+
+  <!-- Gazebo sensor plugin attached to camera_link (could also attach to camera_optical_link)
+       IMPORTANT: pose is IDENTITY and we rely on the URDF joints above for geometry. -->
+  <gazebo reference="camera_optical_link">
+    <sensor name="rgbd_camera" type="rgbd_camera">
+      <always_on>true</always_on>
+      <update_rate>30</update_rate>
+
+      <!-- Sensor is exactly at camera_optical_link, no extra pose -->
+      <pose>0 0 0 0 0 0</pose>
+
+      <visualize>true</visualize>
+
+      <camera>
+        <horizontal_fov>0.6</horizontal_fov> <!-- <horizontal_fov>1.089</horizontal_fov>  -->
+        <image>
+          <format>R8G8B8</format>
+          <width>1280</width>
+          <height>720</height>
+    <!--  <width>848</width>
+          <height>480</height> original-->
+        </image>
+        <clip>
+          <near>0.2</near>
+          <far>3.5</far>
+        </clip>
+      </camera>
+
+      <!-- TF frame used in ROS for images/points -->
+      <frame_name>camera_optical_link</frame_name>
+    </sensor>
+  </gazebo>
+
+
+</robot>

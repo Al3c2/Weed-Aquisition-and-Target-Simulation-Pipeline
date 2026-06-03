@@ -1,0 +1,11 @@
+pointing_servo:
+  ros__parameters:
+    swincar:
+      enabled: true
+      # Use your exact mesh (same one as the planner)
+      # Examples:
+      # mesh_resource: "package://sim/meshes/swincar_collision.stl"
+      # mesh_resource: "file:///home/alex/.ignition/gazebo/models/swincar/meshes/swincar_collision.stl"
+      pose_xyz: [0.0, 0.0, 0.0]
+      pose_rpy: [0.0, 0.0, 0.0]
+
