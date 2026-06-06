@@ -21,9 +21,8 @@ Everything needed to run the simulation and perception/navigation stack:
 
 ### `ur3_pointing`
 The arm-side beam-pointing stack:
-- `pointing_planner` — MoveIt 2 planning node
 - `Beam_pointing_precise` — Cartesian, collision-aware precise pointing
-- `Beam_diagnostics.py` — diagnostics helper
+- `Beamastar` — Rttstar aproach
 
 ---
 
