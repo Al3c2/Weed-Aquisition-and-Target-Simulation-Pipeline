@@ -16,7 +16,7 @@ Everything needed to run the simulation and perception/navigation stack:
 - World files, RGB-D camera, TF, and ROS ↔ Gazebo bridges
 - Launch files for the simulation and the two operating modes
 - The detector nodes (`color_detector`, `color_detector_predictive`)
-- The navigation nodes (`swincar_line_follower`, `swincar_line_follower_adaptive`, `swincar_row_driver`)
+- The navigation nodes (`swincar_line_follower`, `swincar_line_follower_adaptive`)
 - The evaluation nodes and ground-truth data (`gt_world.csv`)
 
 ### `ur3_pointing`
