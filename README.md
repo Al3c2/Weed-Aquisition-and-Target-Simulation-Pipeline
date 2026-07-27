@@ -1,4 +1,4 @@
-# Swincar-UR3 Autonomous Inspection Pipeline
+# Swincar-UR3 Autonomous Weeding Pipeline
 
 Autonomous mobile manipulation pipeline for target detection, navigation, and precise beam pointing, built on a Swincar mobile robot + UR3 manipulator in **ROS 2 Humble**, **Gazebo Harmonic**, and **MoveIt 2**.
 
